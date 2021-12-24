@@ -12,9 +12,9 @@ class Multi_Perceptron:
         self.w1 = [[round(random.random(), 1), round(random.random(), 1)], [round(random.random(), 1), round(random.random(), 1)]]    # input Weight
         self.w2 = [round(random.random(), 1), round(random.random(), 1)]    # hidden layer Weight
         self.b = 1     # bias는 항상 1
-        self.bw = [round(random.random(), 1), round(random.random(), 1)]    # bias Weight
+        self.bw = [[round(random.random(), 1), round(random.random(), 1)], [round(random.random(), 1)]]    # bias Weight
         self.running = 0.1  # 이동 값
-        self.epoch = 10000   # 반복 횟수
+        self.epoch = 1000   # 반복 횟수
         self.tss = 0
         self.Run() # 시작.
 
@@ -28,7 +28,7 @@ class Multi_Perceptron:
     def Sigmoid(self, result):
         return 1 / (1+np.exp(-result))
 
-    def WeightedSum(self, x, layer, number=0):    # layer = 층, number = 알파(?) 갯수
+    def WeightedSum(self, x, layer, number=1):    # layer = 층, number = 알파(?) 갯수
         temp_x = [x[0], x[1]]
         w = []
         number -= 1
@@ -46,7 +46,7 @@ class Multi_Perceptron:
         temp_x.append(self.b)
         np_x = np.array(temp_x)
 
-        w.append(self.bw[layer-1])
+        w.append(self.bw[layer-1][number])
         np_w = np.array(w)
 
         result = np.sum(np_w * np_x)
@@ -73,17 +73,17 @@ class Multi_Perceptron:
         # 업데이트를 먼저하고 밑에 수정.
         self.WeightedUpdate([self.result[0][0], self.result[0][1]], self.loss[1][0], 2)      # 2층 업데이트
 
-        self.loss[0][0] = self.loss[1][0] / self.w2[0]
-        self.loss[0][1] = self.loss[1][0] / self.w2[1]
+        self.loss[0][0] = self.loss[1][0] * self.w2[0]
+        self.loss[0][1] = self.loss[1][0] * self.w2[1]
 
-        self.WeightedUpdate(x, self.loss[0][0], 1, 0)
-        self.WeightedUpdate(x, self.loss[0][1], 1, 1)
+        self.WeightedUpdate(x, self.loss[0][0], 1, 1)
+        self.WeightedUpdate(x, self.loss[0][1], 1, 2)
 
         pss = math.pow(self.loss[1][0], 2)
         self.tss += pss
         print("pss :", pss)
 
-    def WeightedUpdate(self, x, loss, layer, number=0):
+    def WeightedUpdate(self, x, loss, layer, number=1):
         number -= 1
         # Weight Update
         if layer == 1:
@@ -96,7 +96,7 @@ class Multi_Perceptron:
             print("error : layer 입력 에러")
             return
 
-        self.bw[layer-1] += self.running * loss * self.b
+        self.bw[layer-1][number] += self.running * loss * self.b
 
     def Run(self):
         for epoch in range(self.epoch):
@@ -105,14 +105,15 @@ class Multi_Perceptron:
             for x1, x2 in self.x:
                 self.Learning([x1, x2])
                 self.Backpropagation([x1, x2], self.target[count])
-                print("(", x1, ",", x2, ")", end="")
-                print("target :", self.target[count], "output :", self.Learning([x1, x2]), "th(output) :", self.Threshold(self.Learning([x1, x2])))
                 count += 1
-            print("epoch :", epoch, "tss :", self.tss / count)
+            print("weight :", self.w1[0], self.w1[1], self.w2)
+            print("bias :", self.bw[0], self.bw[1])
+            self.Show()
+            print("epoch :", epoch, "tss :", self.tss / count, "\n")
 
-            #self.Show()
             if self.tss < 0.01:
                 break
+
 
     def Show(self):
         try:
