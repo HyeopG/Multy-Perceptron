@@ -2,6 +2,7 @@
 import random
 import math
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Multi_Perceptron:
     def __init__(self):
@@ -9,13 +10,15 @@ class Multi_Perceptron:
         self.target = [0, 1, 1, 0]      # 목표값
         self.loss = [[0.0, 0.0], [0.0]]
         self.result = [[0.0, 0.0], [0.0]]
-        self.w1 = [[round(random.random(), 1) - 0.5, round(random.random(), 1) - 0.5], [round(random.random() - 0.5, 1), round(random.random() - 0.5, 1)]]    # input Weight
-        self.w2 = [round(random.random() - 0.5, 1), round(random.random() - 0.5, 1)]    # hidden layer Weight
+        self.w1 = [[round(random.random(), 1) - 0.5, round(random.random(), 1) - 0.5], [round(random.random(), 1) - 0.5, round(random.random(), 1) - 0.5]]    # input Weight
+        self.w2 = [round(random.random(), 1) - 0.5, round(random.random(), 1) - 0.5]    # hidden layer Weight
         self.b = 1     # bias는 항상 1
-        self.bw = [[round(random.random() - 0.5, 1), round(random.random() - 0.5, 1)], [round(random.random() - 0.5, 1)]]    # bias Weight
+        self.bw = [[round(random.random(), 1) - 0.5, round(random.random(), 1) - 0.5], [round(random.random(), 1) - 0.5]]    # bias Weight
         self.running = 0.1  # 이동 값
         self.epoch = 10000   # 반복 횟수
         self.tss = 0
+        self.p_tss = []
+        self.p_epoch = []
         self.Run() # 시작.
 
     def Threshold(self, result):
@@ -28,8 +31,8 @@ class Multi_Perceptron:
     def Sigmoid(self, result):
         return 1 / (1+np.exp(-result))
 
-    def D_Sigmoid(self, loss, sig):
-        return loss * sig * (1-sig)
+    def D_Sigmoid(self, sig):
+        return sig * (1-sig)
 
     def WeightedSum(self, x, layer, number=1):    # layer = 층, number = 알파(?) 갯수
         temp_x = [x[0], x[1]]
@@ -68,7 +71,6 @@ class Multi_Perceptron:
         return self.result[1][0]
 
     def Backpropagation(self, x, target):
-
         # loss 구하기
         self.loss[1][0] = target - self.result[1][0]
 
@@ -76,11 +78,8 @@ class Multi_Perceptron:
         result_list = [self.result[0][0], self.result[0][1]]         # 1층 연산 끝낸 값 모음
         self.WeightedUpdate(result_list, self.loss[1][0], 2)         # 2층 업데이트
 
-        # self.loss[0][0] = self.loss[1][0] * self.w2[0]
-        # self.loss[0][1] = self.loss[1][0] * self.w2[1]
-
-        self.loss[0][0] = self.D_Sigmoid(self.loss[1][0], self.result[0][0])
-        self.loss[0][1] = self.D_Sigmoid(self.loss[1][0], self.result[0][1])
+        self.loss[0][0] = (self.loss[1][0] * self.w2[0]) * self.D_Sigmoid(self.result[0][0])
+        self.loss[0][1] = (self.loss[1][0] * self.w2[1]) * self.D_Sigmoid(self.result[0][1])
 
         self.WeightedUpdate(x, self.loss[0][0], 1, 1)
         self.WeightedUpdate(x, self.loss[0][1], 1, 2)
@@ -113,10 +112,15 @@ class Multi_Perceptron:
                 count += 1
 
             self.Show()
+            self.p_tss.append(self.tss/4)
+            self.p_epoch.append(epoch)
             print("epoch :", epoch, "tss :", self.tss / count, "\n")
 
             if self.tss < 0.01:
+                self.Mat()
                 break
+            elif epoch == self.epoch-1:
+                self.Mat()
 
 
     def Show(self):
@@ -129,6 +133,12 @@ class Multi_Perceptron:
         except:
             print("Error : 입력 에러 발생.")
             return
+
+    def Mat(self):
+        plt.plot(self.p_epoch, self.p_tss)
+        plt.xlabel("epoch")
+        plt.ylabel("M_tss", rotation = 0, labelpad=15)
+        plt.show()
 
 
 
