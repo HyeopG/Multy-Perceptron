@@ -60,10 +60,10 @@ class Multi_Perceptron:
             self.tss = 0
 
             for i in range(self.size):
-                if i % 1000 == 0:
+                if i+1 % 1000 == 0:
                     print(i+1, "\t")
                 x = self.dataset[i]
-                self.Exam(x)
+                self.Forward(x)
 
                 count = 0
                 max = self.result[2][0]
@@ -163,7 +163,7 @@ class Multi_Perceptron:
                 self.target.append(target)
             f.close()
 
-    def PattonError(self):
+    def PattenError(self):
         pss_sum = 0
         for i in range(self.output_layer_num):
             pss_sum += math.pow(self.loss[2][i], 2)
@@ -205,7 +205,7 @@ class Multi_Perceptron:
 
         return result
 
-    def Exam(self, x):
+    def Forward(self, x):
         self.result_list_1 = []
         self.result_list_2 = []
         # 1층 연산
@@ -224,28 +224,20 @@ class Multi_Perceptron:
 
         return self.result[2]
 
-    def Backpropagation(self, x, target):
-        self.loss[0] = [0.0 for i in range(self.h1_layer_num)]  # 1층 loss 초기화
-        self.loss[1] = [0.0 for i in range(self.h2_layer_num)]  # 2층 loss 초기화
-
+    def Loss(self, target):
         # result loss 구하기
         for i in range(self.output_layer_num):
             self.loss[2][i] = target[i] - self.result[2][i]
-            self.WeightedUpdate(self.result_list_2, self.loss[2][i], 3, i)  # 3층 Weight 업데이트
+
+    def Backpropagation(self):
+        self.loss[0] = [0.0 for i in range(self.h1_layer_num)]  # 1층 loss 초기화
+        self.loss[1] = [0.0 for i in range(self.h2_layer_num)]  # 2층 loss 초기화
 
         # h2 loss 구하기
         self.LossSum(self.loss[2], self.loss[1], 3)
 
         # h1 loss 구하기
         self.LossSum(self.loss[1], self.loss[0], 2)
-
-        # 2층 Weight 업데이트
-        for i in range(self.h2_layer_num):
-            self.WeightedUpdate(self.result_list_1, self.loss[1][i], 2, i)
-
-        # 1층 Weight 업데이트
-        for i in range(self.h1_layer_num):
-            self.WeightedUpdate(x, self.loss[0][i], 1, i)
 
     def LossSum(self, output_loss, input_loss, layer):
         if layer == 2:
@@ -261,7 +253,20 @@ class Multi_Perceptron:
         else:
             print("LossSum - layer 입력 오류")
 
-    def WeightedUpdate(self, x, loss, layer, number):
+    def WeightedUpdate(self, x):
+        # 3층 Weight 업데이트
+        for i in range(self.output_layer_num):
+            self.OneWeightedUpdate(self.result_list_2, self.loss[2][i], 3, i)
+
+        # 2층 Weight 업데이트
+        for i in range(self.h2_layer_num):
+            self.OneWeightedUpdate(self.result_list_1, self.loss[1][i], 2, i)
+
+        # 1층 Weight 업데이트
+        for i in range(self.h1_layer_num):
+            self.OneWeightedUpdate(x, self.loss[0][i], 1, i)
+
+    def OneWeightedUpdate(self, x, loss, layer, number):
         # Weight Update
         if layer == 1:
             for i in range(len(self.w1[number])):        # 받는 Weight 갯수
@@ -294,19 +299,28 @@ class Multi_Perceptron:
         self.SetMnist(imgPath, labelPath)
 
         for epoch in range(self.epoch):
+            print("Epoch", epoch+1, "/", self.epoch)
+            print("[", end="")
             self.tss = 0
             for i in range(self.size):
-                print(i, "\t", end="")
                 x = self.dataset[i]
-                self.Exam(x)
-                self.Backpropagation(x, self.target[i])
-                pss = self.PattonError()
-                self.tss += pss
-                print("pss :", pss)
-            print("epoch :", epoch+1, "\ttss :", self.tss / self.size, "\n")
+                self.Forward(x)
+                self.Loss(self.target[i])
+                self.Backpropagation()
+                self.WeightedUpdate(x)
 
-            if self.tss < 0.01:
+                pss = self.PattenError()
+                self.tss += pss
+
+                if i % (60000/50) == 0:
+                    print("=", end="")
+
+            print("]")
+            print("\ttss :", self.tss / self.size, "\n")
+
+            if self.tss / self.size < 0.01:
                 break
+
         self.Test()   # 임시로 만든 테스트.
         print("EndTest")
 
